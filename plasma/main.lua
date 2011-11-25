@@ -1,11 +1,10 @@
 require "greatwall"
 
-function love.load()
-	wall = Wall("seb.exse.net", 1338)
+function wall.load()
+	return "seb.exse.net", 1338
 end
 
 
-local graphics = love.graphics
 local sin = math.sin
 local cos = math.cos
 local time = 0
@@ -45,7 +44,7 @@ function color(v)
 			c1[3] * f1 + c2[3] * f2
 end
 
-function love.draw()
+function wall.tick()
 
 	time = time + 0.02
 
@@ -66,12 +65,8 @@ function love.draw()
 				+ cos(dist(x - 12.5, y - 12.5,	cos(time * 0.21) * 20,
 												sin(time * 0.22) * 24) * 0.4)
 
-			wall:pixel(x - 1, y - 1, color(value / 8 + 0.5))
---			graphics.setColor(color(value / 8 + 0.5))
---			graphics.rectangle("fill", (x - 1) * 20, (y - 1) * 20, 20, 20)
-
+			wall.pixel(x - 1, y - 1, color(value / 8 + 0.5))
 		end	
 	end
-	wall:draw()
 end
 
