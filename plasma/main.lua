@@ -1,7 +1,8 @@
 require "greatwall"
 
 function wall.load()
-	return "seb.exse.net", 1338
+--	return "seb.exse.net", 1338
+	return "172.22.101.124", 1338
 end
 
 

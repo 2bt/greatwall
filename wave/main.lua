@@ -1,3 +1,10 @@
+require "greatwall"
+
+function wall.load()
+	return "seb.exse.net", 1338
+end
+
+
 local graphics = love.graphics
 local sin = math.sin
 local cos = math.cos
@@ -18,7 +25,11 @@ local buffer1 = { set = set, get = get }
 local buffer2 = { set = set, get = get }
 
 
-function love.draw()
+function wall.tick()
+
+	flip = not flip
+	if flip then return end
+
 
 	if math.random(50) == 1 then
 		buffer1:set(math.random(24), math.random(24),
@@ -57,14 +68,9 @@ function love.draw()
 
 			c = c + dx * 2
 
-			graphics.setColor(c, c, c)
-			graphics.rectangle("fill", (x - 1) * 20, (y - 1) * 20, 20, 20)
+			wall.pixel(x - 1, y - 1, c, c, c)
 
 		end	
 	end
-end
-
-function love.load()
-	graphics.setMode(480, 480)
 end
 

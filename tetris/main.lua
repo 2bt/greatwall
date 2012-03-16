@@ -23,6 +23,7 @@ function Grid:init(player_nr)
 
 	self.player_nr = player_nr
 	self.input = wall.getInput(player_nr)
+	self.old_input = {}
 
 	self:newStone()
 	self:newStone()
@@ -75,12 +76,47 @@ function Grid:collision(check_top)
 	end
 	return false
 end
+
+old_dx = 0
+old_dr = 0
+dr_tick = 0
+dx_tick = 0
+
 function Grid:update()
 
+	local dr = bool[self.input.a] - bool[self.input.b]
+	local dx = bool[self.input.right] - bool[self.input.left]
+
+	if dr ~= old_dr then
+		dr_tick = 0
+		old_dr = dr
+	else
+		dr_tick = dr_tick + 1
+		if dr_tick > 10 then
+			dr_tick = 0
+		else
+			dr = 0
+		end
+	end
+
+
+	if dx ~= old_dx then
+		dx_tick = 0
+		old_dx = dx
+	else
+		dx_tick = dx_tick + 1
+		if dx_tick > 4 then
+			dx_tick = 0
+		else
+			dx = 0
+		end
+	end
+
+
 	-- rotation
-	if self.input.a or self.input.b then
+	if dr ~= 0 then
 		local i = self.rot
-		if self.input.a then
+		if dr > 0 then
 			self.rot = self.rot < 8 and self.rot * 2 or 1
 		else
 			self.rot = self.rot > 1 and self.rot / 2 or 8
@@ -92,7 +128,8 @@ function Grid:update()
 
 	-- horizontal movement
 	local i = self.x
-	self.x = self.x + bool[self.input.right] - bool[self.input.left]
+--	self.x = self.x + bool[self.input.right] - bool[self.input.left]
+	self.x = self.x + dx
 	if i ~= self.x and self:collision(false) then
 		self.x = i
 	end
@@ -121,8 +158,38 @@ function Grid:update()
 				end
 			end
 
-			-- TODO: check for complete lines
+			-- check for complete lines
+			for y, row in ipairs(self.matrix) do
+				local complete = true
+				for x, cell in ipairs(row) do
+					if not cell then
+						complete = false
+						break
+					end
+				end
+				if complete then
 
+					-- increase level
+					self.lines = self.lines + 1
+					self.level_progress = self.level_progress + 1
+					if self.level_progress == 10 then
+						self.level_progress = 0
+						self.ticks_per_drop = self.ticks_per_drop - 1
+						if self.ticks_per_drop < 1 then
+							self.ticks_per_drop = 1
+						end
+					end
+
+					-- drop
+					for i = y, 1, -1 do
+						for x = 1, self.WIDTH do
+							self.matrix[i][x] = i > 1 and self.matrix[i - 1][x]
+								or false
+						end
+					end
+
+				end
+			end
 
 			self:newStone()
 		end
@@ -136,7 +203,7 @@ function Grid:draw()
 
 	local ox = (self.player_nr - 1) * 12
 	local oy = 3
-	local BACKGROUND = { 10, 10, 10 }
+	local BACKGROUND = { 5, 5, 5 }
 
 	for y, row in ipairs(self.matrix) do
 		for x, cell in ipairs(row) do
@@ -158,10 +225,10 @@ players = { Grid(1), Grid(2) }
 
 function wall.tick()
 	players[1]:update()
-	players[2]:update()
+--	players[2]:update()
 
 	players[1]:draw()
-	players[2]:draw()
+--	players[2]:draw()
 
 end
 

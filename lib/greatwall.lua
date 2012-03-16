@@ -152,7 +152,7 @@ function love.update(dt)
 			if not t then
 				break
 			end
-			
+
 			local msg = sock:receive()
 			local nr, bits
 			if msg then
@@ -185,15 +185,16 @@ function love.update(dt)
 
 end
 
+local trans = {}
+
 function love.draw()
 	if wall.tick then wall.tick(delta_time) end
 
 	local w = love.graphics.getWidth() / width
 	local h = love.graphics.getHeight() / height
 
-	local trans = {}
 	for i, color in ipairs(buffer) do
-		trans[#trans + 1] = ("%02x%02x%02x"):format(color[1], color[2], color[3])
+		trans[i] = ("%02x%02x%02x"):format(color[1], color[2], color[3])
 		local x = ((i - 1) % width) * w
 		local y = math.floor((i - 1) / width) * h
 		love.graphics.setColor(color[1], color[2], color[3])

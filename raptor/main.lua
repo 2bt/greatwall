@@ -1,6 +1,27 @@
 require "helper"
 require "greatwall"
 
+s = {
+	palette = {
+		A = tocolor "aaa",
+		X = tocolor "ddd",
+		x = tocolor "555",
+		F = tocolor "a00",
+		f = tocolor "500",
+	},
+	sprites = {
+[[
+ A
+xXx
+ F
+]],[[
+ A
+xXx
+ f
+]]}
+}
+
+
 Player = Object:new()
 Player.sprite = {
 	{  0, -1, tocolor "aaa" },
@@ -26,14 +47,18 @@ end
 
 function wall.load()
 	player = Player()
-	return "seb.exse.net", 1338
+--	return "seb.exse.net", 1338
 end
 
 function wall.tick()
+	tick = not tick
+	if tick then return end
+
 	wall.clear()
 
 	player:update()
 	player:draw()
+
 end
 
 
