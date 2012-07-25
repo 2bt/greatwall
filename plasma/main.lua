@@ -1,8 +1,7 @@
 require "greatwall"
 
 function wall.load()
---	return "seb.exse.net", 1338
-	return "172.22.101.124", 1338
+	return "bender", 1350
 end
 
 
@@ -67,7 +66,7 @@ function wall.tick()
 												sin(time * 0.22) * 24) * 0.4)
 
 			wall.pixel(x - 1, y - 1, color(value / 8 + 0.5))
-		end	
+		end
 	end
 end
 
