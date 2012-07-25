@@ -1,7 +1,7 @@
 require "greatwall"
 
 function wall.load()
-	return "seb.exse.net", 1338
+	return "bender", 1350
 end
 
 
@@ -50,7 +50,7 @@ function wall.tick()
 
 			buffer2:set(x, y, v * 0.9)
 
-		end	
+		end
 	end
 
 
@@ -70,7 +70,7 @@ function wall.tick()
 
 			wall.pixel(x - 1, y - 1, c, c, c)
 
-		end	
+		end
 	end
 end
 
