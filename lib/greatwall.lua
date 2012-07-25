@@ -88,7 +88,7 @@ end
 
 function love.keypressed(key)
 	if key == "escape" then
-		love.event.push("q")
+		love.event.quit()
 	elseif key == "f" then
 		love.graphics.toggleFullscreen()
 	elseif key == "f1" then
@@ -164,7 +164,7 @@ function love.update(dt)
 				nr = tonumber("0x" .. nr)
 				bits = tonumber("0x" .. bits)
 
-				if nr >= 1 and nr <= 2 then
+				if nr >= 1 and nr <= #input then
 					local player = input[nr]
 					for button, mask in pairs(input_masks) do
 						player[button] = bits / mask % 2 >= 1
