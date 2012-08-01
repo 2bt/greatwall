@@ -1,17 +1,37 @@
 require "greatwall"
 require "helper"
 
-function wall.load()
-	return "seb.exse.net", 1338
+local function isBitSet(n, b)
+	return (n / b) % 2 >= 1
 end
 
+local function pickColor()
+	local angle = math.random(9) * 40
+	local min = 40
+	local max = 180
+
+	local color = {}
+	for i = 1, 3 do
+		angle = (angle + 120) % 360
+		if angle < 60 then
+			color[i] = min + angle / 60 * (max - min)
+		elseif angle < 180 then
+			color[i] = max
+		elseif angle < 240 then
+			color[i] = max - (angle - 180) / 60 * (max - min)
+		else
+			color[i] = min
+		end
+	end
+	return color
+end
 
 local Grid = Object:new {
 	WIDTH = 10,
 	HEIGHT = 20,
 	STONES = {
-		{ 0, 0, 0, 0, 0,15,15, 0, 0,15,15, 0, 0, 0, 0, 0 }, -- cube
-		{ 0, 0,10, 0, 5, 5,15, 5, 0, 0,10, 0, 0, 0,10, 0 }, -- xxxx
+		{ 0, 0, 0, 0, 0,15,15, 0, 0,15,15, 0, 0, 0, 0, 0 }, -- 2x2
+		{ 0, 0,10, 0, 5, 5,15, 5, 0, 0,10, 0, 0, 0,10, 0 }, -- 1x4
 		{ 0, 0, 5, 0, 0, 0,15,15, 0,10,10, 5, 0, 0, 0, 0 }, -- Z
 		{ 0, 0, 0, 5, 0,10,15, 5, 0, 0,15,10, 0, 0, 0, 0 }, -- S
 		{ 0, 4, 5, 8, 0,10,15,10, 0, 2, 5, 1, 0, 0, 0, 0 }, -- J
@@ -23,7 +43,9 @@ function Grid:init(player_nr)
 
 	self.player_nr = player_nr
 	self.input = wall.getInput(player_nr)
-	self.old_input = {}
+	-- input helper
+	self.dr_old = 0
+	self.dx_tick = 0
 
 	self:newStone()
 	self:newStone()
@@ -50,7 +72,8 @@ function Grid:newStone()
 
 	self.next_rot = 2 ^ math.random(0, 3)
 	self.next_stone = self.STONES[math.random(#self.STONES)]
-	self.next_color = { math.random(255), math.random(255), math.random(255) }
+	self.next_color = pickColor()
+--	self.next_color = { math.random(255), math.random(255), math.random(255) }
 end
 function Grid:collision(check_top)
 	for y = 0, 3 do
@@ -76,45 +99,11 @@ function Grid:collision(check_top)
 	end
 	return false
 end
-
-old_dx = 0
-old_dr = 0
-dr_tick = 0
-dx_tick = 0
-
 function Grid:update()
 
-	local dr = bool[self.input.a] - bool[self.input.b]
-	local dx = bool[self.input.right] - bool[self.input.left]
-
-	if dr ~= old_dr then
-		dr_tick = 0
-		old_dr = dr
-	else
-		dr_tick = dr_tick + 1
-		if dr_tick > 10 then
-			dr_tick = 0
-		else
-			dr = 0
-		end
-	end
-
-
-	if dx ~= old_dx then
-		dx_tick = 0
-		old_dx = dx
-	else
-		dx_tick = dx_tick + 1
-		if dx_tick > 4 then
-			dx_tick = 0
-		else
-			dx = 0
-		end
-	end
-
-
 	-- rotation
-	if dr ~= 0 then
+	local dr = bool[self.input.a] - bool[self.input.b]
+	if dr ~= 0 and self.dr_old == 0 then
 		local i = self.rot
 		if dr > 0 then
 			self.rot = self.rot < 8 and self.rot * 2 or 1
@@ -125,10 +114,23 @@ function Grid:update()
 			self.rot = i
 		end
 	end
+	self.dr_old = dr
+
+
 
 	-- horizontal movement
+	local dx = bool[self.input.right] - bool[self.input.left]
+	if dx == 0 then
+		self.dx_tick = 8
+	else
+		if self.dx_tick <= 0 then
+			self.dx_tick = 2
+		elseif self.dx_tick < 7 then
+			dx = 0
+		end
+	end
+	self.dx_tick = self.dx_tick - 1
 	local i = self.x
---	self.x = self.x + bool[self.input.right] - bool[self.input.left]
 	self.x = self.x + dx
 	if i ~= self.x and self:collision(false) then
 		self.x = i
@@ -145,7 +147,7 @@ function Grid:update()
 			-- game over
 			if self:collision(true) then
 				print("game over")
-				love.event.push "q"
+				love.event.quit()
 				return
 			end
 
@@ -195,10 +197,6 @@ function Grid:update()
 		end
 	end
 end
-
-function isBitSet(n, b)
-	return (n / b) % 2 >=1
-end
 function Grid:draw()
 
 	local ox = (self.player_nr - 1) * 12
@@ -221,14 +219,19 @@ function Grid:draw()
 end
 
 
-players = { Grid(1), Grid(2) }
+
+function wall.load()
+	players = { Grid(1), Grid(2) }
+	return "seb.exse.net", 1338
+end
+
 
 function wall.tick()
 	players[1]:update()
---	players[2]:update()
+	players[2]:update()
 
 	players[1]:draw()
---	players[2]:draw()
+	players[2]:draw()
 
 end
 
