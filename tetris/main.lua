@@ -55,11 +55,17 @@ function Grid:init(player_nr)
 	self.lines = 0
 
 	self.matrix = {}
+	self.complete = {}
 	for i = 1, self.HEIGHT do
 		local row = {}
 		for j = 1, self.WIDTH do row[j] = false end
 		self.matrix[i] = row
+		self.complete[i] = false
 	end
+
+	self.state = "normal"
+	self.delay = 0
+
 end
 function Grid:newStone()
 	self.tick = 0
@@ -71,9 +77,9 @@ function Grid:newStone()
 	self.color = self.next_color
 
 	self.next_rot = 2 ^ math.random(0, 3)
-	self.next_stone = self.STONES[math.random(#self.STONES)]
+--	self.next_stone = self.STONES[math.random(#self.STONES)]
+	self.next_stone = self.STONES[2]
 	self.next_color = pickColor()
---	self.next_color = { math.random(255), math.random(255), math.random(255) }
 end
 function Grid:collision(check_top)
 	for y = 0, 3 do
@@ -100,102 +106,161 @@ function Grid:collision(check_top)
 	return false
 end
 function Grid:update()
+	if self.state == "normal" then
 
-	-- rotation
-	local dr = bool[self.input.a] - bool[self.input.b]
-	if dr ~= 0 and self.dr_old == 0 then
-		local i = self.rot
-		if dr > 0 then
-			self.rot = self.rot < 8 and self.rot * 2 or 1
+		-- rotation
+		local dr = bool[self.input.a] - bool[self.input.b]
+		if dr ~= 0 and self.dr_old == 0 then
+			local i = self.rot
+			if dr > 0 then
+				self.rot = self.rot < 8 and self.rot * 2 or 1
+			else
+				self.rot = self.rot > 1 and self.rot / 2 or 8
+			end
+			if self:collision(false) then
+				self.rot = i
+			end
+		end
+		self.dr_old = dr
+
+
+		-- horizontal movement
+		local dx = bool[self.input.right] - bool[self.input.left]
+		if dx == 0 then
+			self.dx_tick = 8
 		else
-			self.rot = self.rot > 1 and self.rot / 2 or 8
-		end
-		if self:collision(false) then
-			self.rot = i
-		end
-	end
-	self.dr_old = dr
-
-
-
-	-- horizontal movement
-	local dx = bool[self.input.right] - bool[self.input.left]
-	if dx == 0 then
-		self.dx_tick = 8
-	else
-		if self.dx_tick <= 0 then
-			self.dx_tick = 2
-		elseif self.dx_tick < 7 then
-			dx = 0
-		end
-	end
-	self.dx_tick = self.dx_tick - 1
-	local i = self.x
-	self.x = self.x + dx
-	if i ~= self.x and self:collision(false) then
-		self.x = i
-	end
-
-	-- vertical movement
-	self.tick = self.tick + 1
-	if self.input.down or self.tick >= self.ticks_per_drop then
-		self.tick = 0
-		self.y = self.y + 1
-		if self:collision(false) then
-			self.y = self.y - 1
-
-			-- game over
-			if self:collision(true) then
-				print("game over")
-				love.event.quit()
-				return
+			if self.dx_tick <= 0 then
+				self.dx_tick = 2
+			elseif self.dx_tick < 7 then
+				dx = 0
 			end
+		end
+		self.dx_tick = self.dx_tick - 1
+		local i = self.x
+		self.x = self.x + dx
+		if i ~= self.x and self:collision(false) then
+			self.x = i
+		end
 
-			-- copy stone to matrix
-			for y = 0, 3 do
-				for x = 0, 3 do
-					if isBitSet(self.stone[x * 4 + y + 1], self.rot) then
-						self.matrix[y + self.y][x + self.x] = self.color
-					end
+		-- vertical movement
+		self.tick = self.tick + 1
+		if self.input.down or self.tick >= self.ticks_per_drop then
+			self.tick = 0
+			self.y = self.y + 1
+			if self:collision(false) then
+				self.y = self.y - 1
+
+				-- game over
+				if self:collision(true) then
+					self.state = "over"
+					return
 				end
-			end
 
-			-- check for complete lines
-			for y, row in ipairs(self.matrix) do
-				local complete = true
-				for x, cell in ipairs(row) do
-					if not cell then
-						complete = false
-						break
-					end
-				end
-				if complete then
-
-					-- increase level
-					self.lines = self.lines + 1
-					self.level_progress = self.level_progress + 1
-					if self.level_progress == 10 then
-						self.level_progress = 0
-						self.ticks_per_drop = self.ticks_per_drop - 1
-						if self.ticks_per_drop < 1 then
-							self.ticks_per_drop = 1
+				-- copy stone to matrix
+				for y = 0, 3 do
+					for x = 0, 3 do
+						if isBitSet(self.stone[x * 4 + y + 1], self.rot) then
+							self.matrix[y + self.y][x + self.x] = self.color
 						end
 					end
+				end
+				self.state = "delay"
+				self.delay = 20
 
-					-- drop
+				-- check for complete lines
+				for y, row in ipairs(self.matrix) do
+					local complete = true
+					for x, cell in ipairs(row) do
+						if not cell then
+							complete = false
+							break
+						end
+					end
+					if complete then
+						self.complete[y] = true
+						self.state = "lineblink"
+						self.delay = 20
+					end
+				end
+				return
+--[[
+					if complete then
+
+						-- increase level
+						self.lines = self.lines + 1
+						self.level_progress = self.level_progress + 1
+						if self.level_progress == 10 then
+							self.level_progress = 0
+							self.ticks_per_drop = self.ticks_per_drop - 1
+							if self.ticks_per_drop < 1 then
+								self.ticks_per_drop = 1
+							end
+						end
+
+						-- drop
+						for i = y, 1, -1 do
+							for x = 1, self.WIDTH do
+								self.matrix[i][x] =
+									i > 1 and self.matrix[i - 1][x] or false
+							end
+						end
+
+					end
+				end
+				self:newStone()
+--]]
+			end
+		end
+
+	elseif self.state == "lineblink" then
+		self.delay = self.delay - 1
+		if self.delay <= 0 then
+			for y, complete in ipairs(self.complete) do
+				if complete then
+					for x = 1, self.WIDTH do
+						self.matrix[y][x] = false
+					end
+				end
+			end
+			self.state = "linedrop"
+			self.delay = 2
+		end
+
+	elseif self.state == "linedrop" then
+		self.delay = self.delay - 1
+		if self.delay <= 0 then
+			self.delay = 2
+
+			local any = false
+			for y = self.HEIGHT, 1, -1 do
+				if self.complete[y] then
+					any = true
 					for i = y, 1, -1 do
 						for x = 1, self.WIDTH do
-							self.matrix[i][x] = i > 1 and self.matrix[i - 1][x]
-								or false
+							self.matrix[i][x] =
+								i > 1 and self.matrix[i - 1][x] or false
 						end
+						self.complete[i] = self.complete[i - 1] or false
 					end
-
+					return
 				end
 			end
+			if not any then
+				self.state = "delay"
+				self.delay = 20
+			end
+		end
 
+	elseif self.state == "delay" then
+		self.delay = self.delay - 1
+		if self.delay <= 0 then
 			self:newStone()
+			self.state = "normal"
 		end
 	end
+
+
+
 end
 function Grid:draw()
 
@@ -206,12 +271,17 @@ function Grid:draw()
 	for y, row in ipairs(self.matrix) do
 		for x, cell in ipairs(row) do
 			local color = cell or BACKGROUND
-			if	x >= self.x and x < self.x + 4 and
+			if	self.state == "normal" and
+				x >= self.x and x < self.x + 4 and
 				y >= self.y and y < self.y + 4 and
 				isBitSet(self.stone[(x - self.x) * 4 + y - self.y + 1], self.rot)
 			then
 				color = self.color
 			end
+			if self.state == "lineblink" and self.complete[y] and self.delay % 5 < 2 then
+				color = { 255, 255, 255 }
+			end
+
 
 			wall.pixel(x + ox, y + oy, unpack(color)) -- background
 		end
