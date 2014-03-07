@@ -77,8 +77,8 @@ function Grid:newStone()
 	self.color = self.next_color
 
 	self.next_rot = 2 ^ math.random(0, 3)
---	self.next_stone = self.STONES[math.random(#self.STONES)]
-	self.next_stone = self.STONES[2]
+	self.next_stone = self.STONES[math.random(#self.STONES)]
+--	self.next_stone = self.STONES[2]
 	self.next_color = pickColor()
 end
 function Grid:collision(check_top)
@@ -292,7 +292,8 @@ end
 
 function wall.load()
 	players = { Grid(1), Grid(2) }
-	return "seb.exse.net", 1338
+	--return "seb.exse.net", 1338
+	return "10.0.1.2", 1350
 end
 
 
