@@ -156,7 +156,7 @@ function love.update(dt)
 			local msg = sock:receive()
 			local nr, bits
 			if msg then
-				nr, bits = msg:match "09(..)(..).."
+				nr, bits = msg:match "09(..)(..)"
 			end
 
 			if nr then
